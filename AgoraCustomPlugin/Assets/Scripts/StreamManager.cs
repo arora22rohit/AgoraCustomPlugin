@@ -29,7 +29,6 @@ public class StreamManager : MonoBehaviour
 #endif
     static IVideoChatClient app = null;
 
-
     // PLEASE KEEP THIS App ID IN SAFE PLACE
     // Get your own App ID at https://dashboard.agora.io/
     [Header("Agora Properties")]
@@ -56,6 +55,7 @@ public class StreamManager : MonoBehaviour
         CheckAppId();
         LoadLastChannel();
         ShowVersion();
+        InitializeApp();
     }
 
     void Update()
@@ -106,7 +106,7 @@ public class StreamManager : MonoBehaviour
     }
 
     
-    public void HandleSceneButtonClick(int sceneEnum)
+    public void InitializeApp()
     {
         string channelName = "Youtube";
 
