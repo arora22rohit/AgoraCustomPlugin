@@ -31,7 +31,7 @@ public class StreamManager : MonoBehaviour
     // PLEASE KEEP THIS App ID IN SAFE PLACE
     // Get your own App ID at https://dashboard.agora.io/
     
-    private string AppID = "0736881ee591479c978731a9c0712207";
+    private string AppID = "61455bce513940b4a0cdfebf1e64c90a";
 
     [Header("UI Controls")]
 

@@ -788,6 +788,10 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1327351974308730880, guid: 0b814f35291056e42af3b8fd264f2dfa, type: 3}
+      propertyPath: m_Name
+      value: LiveButton
+      objectReference: {fileID: 0}
     - target: {fileID: 1327351975893711319, guid: 0b814f35291056e42af3b8fd264f2dfa, type: 3}
       propertyPath: m_Pivot.x
       value: 0
