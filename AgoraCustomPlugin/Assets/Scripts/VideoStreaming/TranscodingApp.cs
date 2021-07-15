@@ -1,6 +1,7 @@
 ﻿using agora_gaming_rtc;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.UI;
 
 using Logger = agora_utilities.Logger;
@@ -8,7 +9,7 @@ using Logger = agora_utilities.Logger;
 public class TranscodingApp : PlayerViewControllerBase
 {
     string YTURL = "rtmp://a.rtmp.youtube.com/live2/";// h8sf-wfkf-3bcj-zwdq-8bse";
-
+    [SerializeField] RenderTexture renderTexture;
     int hostCount = 0;
     uint MyUID { get; set; }
     uint RemoteUID { get; set; }
@@ -26,7 +27,6 @@ public class TranscodingApp : PlayerViewControllerBase
     {
 
         base.PrepareToJoin();
-        
         resolution = GetResolution();
         Debug.LogError("New Resolution: " + resolution);
         EnableShareScreen();
@@ -60,20 +60,25 @@ public class TranscodingApp : PlayerViewControllerBase
     protected override void SetupUI()
     {
         base.SetupUI();
-        monoProxy = GameObject.Find("Canvas").GetComponent<MonoBehaviour>();
-        Button openButton = GameObject.Find("OpenStreaming").GetComponent<Button>();
-        openButton.onClick.AddListener(() => { HandleOpenButtonClick(openButton); });
-        
-        GameObject loggerObj = GameObject.Find("LoggerText");
-        if (loggerObj != null)
-        {
-            Text text = loggerObj.GetComponent<Text>();
-            if (text != null)
-            {
-                logger = new Logger(text);
-                logger.Clear();
-            }
-        }
+      //  StopTranscoding();
+        monoProxy = GameObject.Find("LiveButton").GetComponent<MonoBehaviour>();
+        //Button openButton = GameObject.Find("OpenStreaming").GetComponent<Button>();
+        //openButton.onClick.AddListener(() => { HandleOpenButtonClick(openButton); });
+
+        //GameObject loggerObj = GameObject.Find("LoggerText");
+        //if (loggerObj != null)
+        //{
+        //    Text text = loggerObj.GetComponent<Text>();
+        //    if (text != null)
+        //    {
+        //        logger = new Logger(text);
+        //        logger.Clear();
+        //    }
+        //}
+        GameObject container = null;//obj.transform.GetChild(0).gameObject;
+        //container.SetActive(true);
+        Button startButton = GameObject.Find("LiveButton").GetComponent<Button>();
+        startButton.onClick.AddListener(() => { HandleStartButtonClick(startButton, container); });
     }
 
     void HandleOpenButtonClick(Button button)
@@ -101,23 +106,25 @@ public class TranscodingApp : PlayerViewControllerBase
         if (IsStreamingLive)
         {
             StopTranscoding();
-            button.GetComponentInChildren<Text>().text = "Start";
-            container.SetActive(false);
+            //button.GetComponentInChildren<Text>().text = "Start";
+            //container.SetActive(false);
         }
         else
         {
-            GameObject obj = GameObject.Find("RTMPKeyInput");
-            Debug.LogError("Name: " + obj.name);
-            InputField rtmpKey = GameObject.Find("RTMPKeyInput").GetComponent<InputField>();
-            YTURL += rtmpKey.text;
+            //GameObject obj = GameObject.Find("RTMPKeyInput");
+            //Debug.LogError("Name: " + obj.name);
+            //InputField rtmpKey = GameObject.Find("RTMPKeyInput").GetComponent<InputField>();
+            string txt = "h8sf-wfkf-3bcj-zwdq-8bse";
+            //  YTURL += rtmpKey.text;
+            YTURL += txt;
             Debug.LogError("Youtube: " + YTURL);
-            container.SetActive(false);
+            //container.SetActive(false);
             StartSharing();
-            if (logger != null)
-            {
-                logger.DebugAssert(IsCDNAddressReady(), "You may need to fill in your Stream Key in the TranscodingApp source file!");
-            }
-            button.GetComponentInChildren<Text>().text = "Stop";
+            //if (logger != null)
+            //{
+            //    logger.DebugAssert(IsCDNAddressReady(), "You may need to fill in your Stream Key in the TranscodingApp source file!");
+            //}
+           // button.GetComponentInChildren<Text>().text = "Stop";
             StartTranscoding(RemoteUID);
         }
         IsStreamingLive = !IsStreamingLive;
@@ -144,15 +151,15 @@ public class TranscodingApp : PlayerViewControllerBase
 
     Vector2Int  GetResolution()
     {   
-        if (Screen.width > 1280)
+        if (Screen.width > 640)
         {
             Debug.LogError("Org Width: " + Screen.width);
-            float factor = 1.7f;// 1920 / 1280;
+            float factor = Screen.width / 640f;
             Debug.LogError("Factor: " + factor);
             Debug.LogError("Org Height: " + Screen.height);
             int newHeight = Mathf.RoundToInt(Screen.height / factor);
             Debug.LogError("New Height: " + newHeight);
-            return new Vector2Int(1280, newHeight);
+            return new Vector2Int(640, newHeight);
         }
         return new Vector2Int(Screen.width, Screen.height);
     }
@@ -227,26 +234,32 @@ public class TranscodingApp : PlayerViewControllerBase
         return result;
     }*/
 
+    public Texture2D toTexture2D(RenderTexture rTex)
+    {
+        Texture2D dest = new Texture2D(Screen.width, Screen.height, TextureFormat.RGBA32, false);
+        dest.Apply(false);
+        Graphics.CopyTexture(rTex, dest);
+        return dest;
+    }
+    //WaitForFixedUpdate frameEndWait = new WaitForFixedUpdate();// WaitForEndOfFrame();
     IEnumerator shareScreen()
     {
         while (running)
         {
-            yield return new WaitForEndOfFrame();
-
+            yield return Application.isBatchMode ? null : new WaitForEndOfFrame();
+            newTexture = toTexture2D(renderTexture);
+            
             //Read the Pixels inside the Rectangle
-            mTexture.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0, false);
+            /*mTexture.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0, false);
             mTexture.Apply();
-
-            if(mTexture.width > 1280)
+            if(mTexture.width > 640f)
             {   
                 newTexture = Resize(mTexture, resolution.x, resolution.y, false);
             }
             else
             {
                 newTexture = mTexture;
-
-            }
-
+            }*/
             Debug.LogError("Current Resolution: " + newTexture.width+ " H: "+ newTexture.height);
             // Get the Raw Texture data from the the from the texture and apply it to an array of bytes
             byte[] bytes = newTexture.GetRawTextureData();
@@ -280,6 +293,62 @@ public class TranscodingApp : PlayerViewControllerBase
         }
     }
 
+    void OnCompleteReadback(AsyncGPUReadbackRequest request)
+    {
+        if (request.hasError)
+        {
+            Debug.Log("GPU readback error detected.");
+            return;
+        }
+
+        var tex = new Texture2D(Screen.width, Screen.height, TextureFormat.ARGB32, false);
+        tex.LoadRawTextureData(request.GetData<uint>());
+        tex.Apply();
+
+        if(mTexture.width > 1280)
+            {   
+                newTexture = Resize(tex, resolution.x, resolution.y, false);
+
+            }
+            else
+            {
+                newTexture = tex;
+
+            }
+
+            Debug.LogError("Current Resolution: " + newTexture.width+ " H: "+ newTexture.height);
+            // Get the Raw Texture data from the the from the texture and apply it to an array of bytes
+            byte[] bytes = newTexture.GetRawTextureData();
+            
+            // Check to see if there is an engine instance already created
+            //if the engine is present
+            if (mRtcEngine != null)
+            {
+                //Create a new external video frame
+                ExternalVideoFrame externalVideoFrame = new ExternalVideoFrame();
+                //Set the buffer type of the video frame
+                externalVideoFrame.type = ExternalVideoFrame.VIDEO_BUFFER_TYPE.VIDEO_BUFFER_RAW_DATA;
+                // Set the video pixel format
+                externalVideoFrame.format = ExternalVideoFrame.VIDEO_PIXEL_FORMAT.VIDEO_PIXEL_RGBA;  // V.3.x.x
+                //apply raw data you are pulling from the rectangle you created earlier to the video frame
+                externalVideoFrame.buffer = bytes;
+                //Set the width of the video frame (in pixels)
+                externalVideoFrame.stride = resolution.x;
+                //Set the height of the video frame
+                externalVideoFrame.height = resolution.y;
+                //Rotate the video frame (0, 90, 180, or 270)
+                externalVideoFrame.rotation = 180;
+                externalVideoFrame.timestamp = timestamp++;
+                //Push the external video frame with the frame we just created
+                mRtcEngine.PushVideoFrame(externalVideoFrame);
+                if (timestamp % 100 == 0)
+                {
+                    Debug.LogWarning("Pushed frame = " + timestamp);
+                }
+            }
+
+    }
+
     protected override void OnUserJoined(uint uid, int elapsed)
     {
         hostCount++;
@@ -307,6 +376,8 @@ public class TranscodingApp : PlayerViewControllerBase
 
     void StopTranscoding()
     {
+        //v4tt-rkrr-j7dy-1cpm-00p6
+        //Debug.Log("STtttttttoppppppppp/////////////");
         running = false;
         mRtcEngine.RemovePublishStreamUrl(YTURL);
         IsStreamingLive = false;
@@ -336,14 +407,14 @@ public class TranscodingApp : PlayerViewControllerBase
         live.height = Screen.height;*/
         live.width = resolution.x; //1280;
         live.height = resolution.y;// 720;
-        live.videoBitrate = 400;
+        live.videoBitrate = 50;
         live.videoCodecProfile = VIDEO_CODEC_PROFILE_TYPE.VIDEO_CODEC_PROFILE_MAIN;
         live.videoGop = 30;
         live.videoFramerate = 24;
         live.lowLatency = false;
 
-        live.audioSampleRate = AUDIO_SAMPLE_RATE_TYPE.AUDIO_SAMPLE_RATE_44100;
-        live.audioBitrate = 48;
+        live.audioSampleRate = AUDIO_SAMPLE_RATE_TYPE.AUDIO_SAMPLE_RATE_32000;
+        live.audioBitrate = 32;
         live.audioChannels = 1;
         live.audioCodecProfile = AUDIO_CODEC_PROFILE_TYPE.AUDIO_CODEC_PROFILE_LC_AAC;
         live.liveStreamAdvancedFeatures = new LiveStreamAdvancedFeature[0];
@@ -411,7 +482,7 @@ public class TranscodingApp : PlayerViewControllerBase
         Debug.Log("OnStreamPublished url===" + url);
         Debug.Log("OnStreamPublished errorCode===" + errorCode + " = " + IRtcEngine.GetErrorDescription(errorCode));
     }
-    const string STREAMKEY_PLACEHOLDER = "h8sf-wfkf-3bcj-zwdq-8bse";
+    const string STREAMKEY_PLACEHOLDER = "v4tt-rkrr-j7dy-1cpm-00p6";
     bool IsCDNAddressReady()
     {
         Debug.LogError("Youtube: " + YTURL + " Key: " + STREAMKEY_PLACEHOLDER);
