@@ -151,48 +151,21 @@ public class TranscodingApp : PlayerViewControllerBase
 
     Vector2Int  GetResolution()
     {   
-        if (Screen.width > 640)
+        if (Screen.width > 1280f)
         {
             Debug.LogError("Org Width: " + Screen.width);
-            float factor = Screen.width / 640f;
+            float factor = Screen.width / 1280f;
             Debug.LogError("Factor: " + factor);
             Debug.LogError("Org Height: " + Screen.height);
             int newHeight = Mathf.RoundToInt(Screen.height / factor);
             Debug.LogError("New Height: " + newHeight);
-            return new Vector2Int(640, newHeight);
+            //return new Vector2Int(1280, newHeight);
+            return new Vector2Int(Screen.width, Screen.height);
         }
         return new Vector2Int(Screen.width, Screen.height);
     }
 
-    /*public static Texture2D resizeTexture(Texture2D oldTexture, float scaleFactor)
-    {
-        int height = Mathf.RoundToInt(oldTexture.height * scaleFactor);
-        int width = Mathf.RoundToInt(oldTexture.width * scaleFactor);
-        if (scaleFactor == 1)
-        {
-            return oldTexture;
-        }
-        if (height * width > 1000000000)
-        {
-            Debug.LogError("you are trying to build a texture with atleast 1billion pixels, this will most likeley crash unity");
-            return Texture2D.whiteTexture;
-        }
-        Texture2D texture = new Texture2D(height, width);
-        texture.filterMode = FilterMode.Point;
-        texture.wrapMode = TextureWrapMode.Clamp;
-        Color[] pixels = new Color[height * width];
-        for (int y = 0; y < height; y++)
-        {
-            for (int x = 0; x < width; x++)
-            {
-                pixels[x + y * width] = oldTexture.GetPixelBilinear((float)x / (float)width, (float)y / (float)height);
-            }
-        }
-        texture.SetPixels(pixels);
-        texture.Apply();
-        return texture;
-    }*/
-
+    
     Texture2D Resize(Texture2D sourceTex, int Width, int Height, bool flipY)
     {
         Texture2D destTex = new Texture2D(Width, Height, sourceTex.format, false);
@@ -217,137 +190,65 @@ public class TranscodingApp : PlayerViewControllerBase
         return destTex;
     }
 
-
-    /*public Texture2D ScaleTexture(Texture2D source, int targetWidth, int targetHeight)
-    {
-        Texture2D result = new Texture2D(targetWidth, targetHeight, source.format, true);
-        Color[] rpixels = result.GetPixels(0);
-        float incX = ((float)1 / source.width) * ((float)source.width / targetWidth);
-        float incY = ((float)1 / source.height) * ((float)source.height / targetHeight);
-        for (int px = 0; px < rpixels.Length; px++)
-        {
-            rpixels[px] = source.GetPixelBilinear(incX * ((float)px % targetWidth),
-                              incY * ((float)Mathf.Floor(px / targetWidth)));
-        }
-        result.SetPixels(rpixels, 0);
-        result.Apply();
-        return result;
-    }*/
-
-    public Texture2D toTexture2D(RenderTexture rTex)
-    {
-        Texture2D dest = new Texture2D(Screen.width, Screen.height, TextureFormat.RGBA32, false);
-        dest.Apply(false);
-        Graphics.CopyTexture(rTex, dest);
-        return dest;
-    }
+    int count = 0;
+    
     //WaitForFixedUpdate frameEndWait = new WaitForFixedUpdate();// WaitForEndOfFrame();
     IEnumerator shareScreen()
     {
         while (running)
         {
             yield return Application.isBatchMode ? null : new WaitForEndOfFrame();
-            newTexture = toTexture2D(renderTexture);
-            
-            //Read the Pixels inside the Rectangle
-            /*mTexture.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0, false);
-            mTexture.Apply();
-            if(mTexture.width > 640f)
-            {   
-                newTexture = Resize(mTexture, resolution.x, resolution.y, false);
-            }
-            else
+
+            count++;
+            if (count % 2 == 0)
             {
-                newTexture = mTexture;
-            }*/
-            Debug.LogError("Current Resolution: " + newTexture.width+ " H: "+ newTexture.height);
-            // Get the Raw Texture data from the the from the texture and apply it to an array of bytes
-            byte[] bytes = newTexture.GetRawTextureData();
-            
-            // Check to see if there is an engine instance already created
-            //if the engine is present
-            if (mRtcEngine != null)
-            {
-                //Create a new external video frame
-                ExternalVideoFrame externalVideoFrame = new ExternalVideoFrame();
-                //Set the buffer type of the video frame
-                externalVideoFrame.type = ExternalVideoFrame.VIDEO_BUFFER_TYPE.VIDEO_BUFFER_RAW_DATA;
-                // Set the video pixel format
-                externalVideoFrame.format = ExternalVideoFrame.VIDEO_PIXEL_FORMAT.VIDEO_PIXEL_RGBA;  // V.3.x.x
-                //apply raw data you are pulling from the rectangle you created earlier to the video frame
-                externalVideoFrame.buffer = bytes;
-                //Set the width of the video frame (in pixels)
-                externalVideoFrame.stride = resolution.x;
-                //Set the height of the video frame
-                externalVideoFrame.height = resolution.y;
-                //Rotate the video frame (0, 90, 180, or 270)
-                externalVideoFrame.rotation = 180;
-                externalVideoFrame.timestamp = timestamp++;
-                //Push the external video frame with the frame we just created
-                mRtcEngine.PushVideoFrame(externalVideoFrame);
-                if (timestamp % 100 == 0)
+                //Read the Pixels inside the Rectangle
+                mTexture.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0, false);
+                mTexture.Apply();
+                if (mTexture.width > 1280f)
                 {
-                    Debug.LogWarning("Pushed frame = " + timestamp);
+                    //newTexture = Resize(mTexture, resolution.x, resolution.y, false);
+                    newTexture = mTexture;
+                }
+                else
+                {
+                    newTexture = mTexture;
+                }
+                Debug.LogError("Current Resolution: " + newTexture.width + " H: " + newTexture.height);
+                // Get the Raw Texture data from the the from the texture and apply it to an array of bytes
+                byte[] bytes = newTexture.GetRawTextureData();
+
+                // Check to see if there is an engine instance already created
+                //if the engine is present
+                if (mRtcEngine != null)
+                {
+                    //Create a new external video frame
+                    ExternalVideoFrame externalVideoFrame = new ExternalVideoFrame();
+                    //Set the buffer type of the video frame
+                    externalVideoFrame.type = ExternalVideoFrame.VIDEO_BUFFER_TYPE.VIDEO_BUFFER_RAW_DATA;
+                    // Set the video pixel format
+                    externalVideoFrame.format = ExternalVideoFrame.VIDEO_PIXEL_FORMAT.VIDEO_PIXEL_RGBA;  // V.3.x.x
+                                                                                                         //apply raw data you are pulling from the rectangle you created earlier to the video frame
+                    externalVideoFrame.buffer = bytes;
+                    //Set the width of the video frame (in pixels)
+                    externalVideoFrame.stride = resolution.x;
+                    //Set the height of the video frame
+                    externalVideoFrame.height = resolution.y;
+                    //Rotate the video frame (0, 90, 180, or 270)
+                    externalVideoFrame.rotation = 180;
+                    externalVideoFrame.timestamp = timestamp++;
+                    //Push the external video frame with the frame we just created
+                    mRtcEngine.PushVideoFrame(externalVideoFrame);
+                    if (timestamp % 100 == 0)
+                    {
+                        Debug.LogWarning("Pushed frame = " + timestamp);
+                    }
                 }
             }
+            
         }
     }
 
-    void OnCompleteReadback(AsyncGPUReadbackRequest request)
-    {
-        if (request.hasError)
-        {
-            Debug.Log("GPU readback error detected.");
-            return;
-        }
-
-        var tex = new Texture2D(Screen.width, Screen.height, TextureFormat.ARGB32, false);
-        tex.LoadRawTextureData(request.GetData<uint>());
-        tex.Apply();
-
-        if(mTexture.width > 1280)
-            {   
-                newTexture = Resize(tex, resolution.x, resolution.y, false);
-
-            }
-            else
-            {
-                newTexture = tex;
-
-            }
-
-            Debug.LogError("Current Resolution: " + newTexture.width+ " H: "+ newTexture.height);
-            // Get the Raw Texture data from the the from the texture and apply it to an array of bytes
-            byte[] bytes = newTexture.GetRawTextureData();
-            
-            // Check to see if there is an engine instance already created
-            //if the engine is present
-            if (mRtcEngine != null)
-            {
-                //Create a new external video frame
-                ExternalVideoFrame externalVideoFrame = new ExternalVideoFrame();
-                //Set the buffer type of the video frame
-                externalVideoFrame.type = ExternalVideoFrame.VIDEO_BUFFER_TYPE.VIDEO_BUFFER_RAW_DATA;
-                // Set the video pixel format
-                externalVideoFrame.format = ExternalVideoFrame.VIDEO_PIXEL_FORMAT.VIDEO_PIXEL_RGBA;  // V.3.x.x
-                //apply raw data you are pulling from the rectangle you created earlier to the video frame
-                externalVideoFrame.buffer = bytes;
-                //Set the width of the video frame (in pixels)
-                externalVideoFrame.stride = resolution.x;
-                //Set the height of the video frame
-                externalVideoFrame.height = resolution.y;
-                //Rotate the video frame (0, 90, 180, or 270)
-                externalVideoFrame.rotation = 180;
-                externalVideoFrame.timestamp = timestamp++;
-                //Push the external video frame with the frame we just created
-                mRtcEngine.PushVideoFrame(externalVideoFrame);
-                if (timestamp % 100 == 0)
-                {
-                    Debug.LogWarning("Pushed frame = " + timestamp);
-                }
-            }
-
-    }
 
     protected override void OnUserJoined(uint uid, int elapsed)
     {
